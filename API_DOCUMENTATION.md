@@ -3,17 +3,22 @@
 ## Base URL
 
 ```
-Development: http://localhost:4000/api
+Development: http://localhost:8000/api
 Production: https://your-api-domain.com/api
 ```
 
 ## Authentication
 
-The API uses JWT (JSON Web Tokens) for authentication. Include the access token in the `Authorization` header:
+The API uses JWT (JSON Web Tokens) for authentication:
+
+- **Access Token**: Sent in the `Authorization` header
+- **Refresh Token**: Stored in HTTP-only cookie (automatically sent with requests)
 
 ```
 Authorization: Bearer <access_token>
 ```
+
+> **Important**: All requests must include `credentials: 'include'` to send/receive cookies.
 
 ---
 
@@ -59,10 +64,13 @@ POST /api/auth/signup
     "createdAt": "2026-03-06T00:00:00.000Z",
     "updatedAt": "2026-03-06T00:00:00.000Z"
   },
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
+
+> **Note**: The refresh token is set as an HTTP-only cookie and is not included in the response body.
+
+````
 
 **Errors:**
 
@@ -77,7 +85,7 @@ Authenticate an existing user.
 
 ```http
 POST /api/auth/login
-```
+````
 
 **Request Body:**
 
@@ -98,10 +106,11 @@ POST /api/auth/login
     "email": "john@example.com",
     "role": "USER"
   },
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
+
+> **Note**: The refresh token is set as an HTTP-only cookie and is not included in the response body.
 
 **Errors:**
 
@@ -142,19 +151,13 @@ Authorization: Bearer <access_token>
 
 ### Refresh Token
 
-Get a new access token using a refresh token.
+Get a new access token using the refresh token cookie.
 
 ```http
 POST /api/auth/refresh
 ```
 
-**Request Body:**
-
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+> **Note**: No request body needed. The refresh token is read from the HTTP-only cookie.
 
 **Response (200):**
 
@@ -165,10 +168,13 @@ POST /api/auth/refresh
     "name": "John Doe",
     "email": "john@example.com"
   },
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
+
+> **Note**: A new refresh token is set as an HTTP-only cookie.
+
+````
 
 **Errors:**
 
@@ -179,19 +185,13 @@ POST /api/auth/refresh
 
 ### Logout
 
-Invalidate the refresh token.
+Invalidate the refresh token and clear the cookie.
 
 ```http
 POST /api/auth/logout
-```
+````
 
-**Request Body:**
-
-```json
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
+> **Note**: No request body needed. The refresh token is read from the HTTP-only cookie.
 
 **Response (200):**
 
@@ -488,12 +488,10 @@ GET /api/categories/:idOrSlug/products
     "slug": "t-shirts"
   },
   "products": [...],
-  "pagination": {
-    "page": 1,
-    "limit": 12,
-    "total": 50,
-    "totalPages": 5
-  }
+  "page": 1,
+  "limit": 12,
+  "total": 50,
+  "totalPages": 5
 }
 ```
 
@@ -562,11 +560,11 @@ GET /api/checkout/session/:id
 
 ### 1. Setup API Client
 
-Create an API client with axios or fetch:
+Create an API client with fetch that supports cookies:
 
 ```typescript
 // lib/api.ts
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 class ApiClient {
   private accessToken: string | null = null;
@@ -595,6 +593,7 @@ class ApiClient {
     const response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       headers,
+      credentials: "include", // Required for cookies
     });
 
     if (!response.ok) {
@@ -624,17 +623,17 @@ class ApiClient {
     return this.request("/auth/me");
   }
 
-  async refreshToken(refreshToken: string) {
+  async refreshToken() {
+    // No body needed - refresh token is in cookie
     return this.request("/auth/refresh", {
       method: "POST",
-      body: JSON.stringify({ refreshToken }),
     });
   }
 
-  async logout(refreshToken: string) {
+  async logout() {
+    // No body needed - refresh token is in cookie
     return this.request("/auth/logout", {
       method: "POST",
-      body: JSON.stringify({ refreshToken }),
     });
   }
 
@@ -714,6 +713,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  refreshToken: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -722,48 +722,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Try to restore session on mount
   useEffect(() => {
     const accessToken = localStorage.getItem('accessToken');
     if (accessToken) {
       api.setAccessToken(accessToken);
       api.getMe()
         .then((data: any) => setUser(data.user))
-        .catch(() => localStorage.removeItem('accessToken'))
+        .catch(() => {
+          // Token expired, try to refresh
+          refreshToken().catch(() => {
+            localStorage.removeItem('accessToken');
+          });
+        })
         .finally(() => setIsLoading(false));
     } else {
-      setIsLoading(false);
+      // No access token, try to refresh using cookie
+      refreshToken()
+        .catch(() => {})
+        .finally(() => setIsLoading(false));
     }
   }, []);
 
   const login = async (email: string, password: string) => {
     const data: any = await api.login(email, password);
+    // Refresh token is automatically set as HTTP-only cookie
     localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
     api.setAccessToken(data.accessToken);
     setUser(data.user);
   };
 
   const signup = async (name: string, email: string, password: string) => {
     const data: any = await api.signup(name, email, password);
+    // Refresh token is automatically set as HTTP-only cookie
     localStorage.setItem('accessToken', data.accessToken);
-    localStorage.setItem('refreshToken', data.refreshToken);
+    api.setAccessToken(data.accessToken);
+    setUser(data.user);
+  };
+
+  const refreshToken = async () => {
+    const data: any = await api.refreshToken();
+    // New refresh token is automatically set as HTTP-only cookie
+    localStorage.setItem('accessToken', data.accessToken);
     api.setAccessToken(data.accessToken);
     setUser(data.user);
   };
 
   const logout = async () => {
-    const refreshToken = localStorage.getItem('refreshToken');
-    if (refreshToken) {
-      await api.logout(refreshToken);
-    }
+    await api.logout();
+    // Cookie is cleared by server
     localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
     api.clearAccessToken();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout, refreshToken }}>
       {children}
     </AuthContext.Provider>
   );
@@ -825,7 +839,7 @@ export function useCheckout() {
 
 ```env
 # Frontend (.env.local)
-NEXT_PUBLIC_API_URL=http://localhost:4000/api
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 ```
 
