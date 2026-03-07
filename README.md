@@ -88,66 +88,72 @@ The API will be available at `http://localhost:8000`.
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Compile TypeScript to JavaScript |
-| `npm start` | Start production server |
-| `npm test` | Run tests |
-| `npm run test:watch` | Run tests in watch mode |
-| `npm run test:coverage` | Run tests with coverage report |
-| `npm run db:generate` | Generate Prisma client |
-| `npm run db:migrate` | Run database migrations |
-| `npm run db:push` | Push schema changes (dev) |
-| `npm run db:seed` | Seed database with sample data |
-| `npm run db:studio` | Open Prisma Studio GUI |
+| Command                 | Description                              |
+| ----------------------- | ---------------------------------------- |
+| `npm run dev`           | Start development server with hot reload |
+| `npm run build`         | Compile TypeScript to JavaScript         |
+| `npm start`             | Start production server                  |
+| `npm test`              | Run tests                                |
+| `npm run test:watch`    | Run tests in watch mode                  |
+| `npm run test:coverage` | Run tests with coverage report           |
+| `npm run db:generate`   | Generate Prisma client                   |
+| `npm run db:migrate`    | Run database migrations                  |
+| `npm run db:push`       | Push schema changes (dev)                |
+| `npm run db:seed`       | Seed database with sample data           |
+| `npm run db:studio`     | Open Prisma Studio GUI                   |
 
 ## API Endpoints
 
 ### Authentication
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/auth/signup` | - | Create account |
-| POST | `/api/auth/login` | - | Login |
-| POST | `/api/auth/refresh` | Cookie | Refresh access token |
-| POST | `/api/auth/logout` | Cookie | Logout |
-| GET | `/api/auth/me` | Bearer | Get current user |
-| POST | `/api/auth/change-password` | Bearer | Change password |
+
+| Method | Endpoint                    | Auth   | Description          |
+| ------ | --------------------------- | ------ | -------------------- |
+| POST   | `/api/auth/signup`          | -      | Create account       |
+| POST   | `/api/auth/login`           | -      | Login                |
+| POST   | `/api/auth/refresh`         | Cookie | Refresh access token |
+| POST   | `/api/auth/logout`          | Cookie | Logout               |
+| GET    | `/api/auth/me`              | Bearer | Get current user     |
+| POST   | `/api/auth/change-password` | Bearer | Change password      |
 
 ### Products
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/products` | - | List products (with filters) |
-| GET | `/api/products/featured` | - | Get featured products |
-| GET | `/api/products/filters` | - | Get filter options |
-| GET | `/api/products/:id` | - | Get product details |
+
+| Method | Endpoint                 | Auth | Description                  |
+| ------ | ------------------------ | ---- | ---------------------------- |
+| GET    | `/api/products`          | -    | List products (with filters) |
+| GET    | `/api/products/featured` | -    | Get featured products        |
+| GET    | `/api/products/filters`  | -    | Get filter options           |
+| GET    | `/api/products/:id`      | -    | Get product details          |
 
 ### Categories
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/categories` | - | List categories |
-| GET | `/api/categories/:idOrSlug` | - | Get category |
-| GET | `/api/categories/:idOrSlug/products` | - | Get category products |
+
+| Method | Endpoint                             | Auth | Description           |
+| ------ | ------------------------------------ | ---- | --------------------- |
+| GET    | `/api/categories`                    | -    | List categories       |
+| GET    | `/api/categories/:idOrSlug`          | -    | Get category          |
+| GET    | `/api/categories/:idOrSlug/products` | -    | Get category products |
 
 ### Checkout
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | `/api/checkout/create-session` | Bearer | Create Stripe checkout |
-| GET | `/api/checkout/session/:id` | - | Get checkout session status |
-| POST | `/api/checkout/webhook` | Stripe Sig | Handle Stripe webhooks |
+
+| Method | Endpoint                       | Auth       | Description                 |
+| ------ | ------------------------------ | ---------- | --------------------------- |
+| POST   | `/api/checkout/create-session` | Bearer     | Create Stripe checkout      |
+| GET    | `/api/checkout/session/:id`    | -          | Get checkout session status |
+| POST   | `/api/checkout/webhook`        | Stripe Sig | Handle Stripe webhooks      |
 
 ### Orders
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/orders` | Bearer | Get user's orders |
-| GET | `/api/orders/:id` | Bearer | Get order by ID |
-| GET | `/api/orders/session/:sessionId` | Bearer | Get order by Stripe session |
-| PATCH | `/api/orders/:id/status` | Bearer | Update order status (admin) |
+
+| Method | Endpoint                         | Auth   | Description                 |
+| ------ | -------------------------------- | ------ | --------------------------- |
+| GET    | `/api/orders`                    | Bearer | Get user's orders           |
+| GET    | `/api/orders/:id`                | Bearer | Get order by ID             |
+| GET    | `/api/orders/session/:sessionId` | Bearer | Get order by Stripe session |
+| PATCH  | `/api/orders/:id/status`         | Bearer | Update order status (admin) |
 
 ### Health
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Health check |
+
+| Method | Endpoint      | Description  |
+| ------ | ------------- | ------------ |
+| GET    | `/api/health` | Health check |
 
 ## Checkout Flow
 
