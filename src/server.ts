@@ -6,6 +6,7 @@ import { authRouter } from "./routes/auth.js";
 import { categoriesRouter } from "./routes/categories.js";
 import { checkoutRouter } from "./routes/checkout.js";
 import { productsRouter } from "./routes/products.js";
+import ordersRouter from "./routes/orders.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import prisma from "./lib/prisma.js";
 
@@ -21,7 +22,15 @@ app.use(
   }),
 );
 app.use(cookieParser());
-app.use(express.json());
+
+// Skip JSON parsing for Stripe webhook (needs raw body for signature verification)
+app.use((req, res, next) => {
+  if (req.originalUrl === "/api/checkout/webhook") {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 
 // Routes
 app.get("/api/health", (_req, res) => {
@@ -32,6 +41,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/checkout", checkoutRouter);
+app.use("/api/orders", ordersRouter);
 
 // Global error handler (must be after routes)
 app.use(errorHandler);
