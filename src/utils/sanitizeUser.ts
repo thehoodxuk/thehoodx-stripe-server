@@ -1,4 +1,4 @@
-import type { User } from "../generated/prisma/client.js";
+import type { User } from "@prisma/client";
 
 export function sanitizeUser(user: User) {
   const { password, ...userWithoutPassword } = user;

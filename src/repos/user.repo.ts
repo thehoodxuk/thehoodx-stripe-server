@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-import type { Prisma } from "../generated/prisma/client.js";
+import type { Prisma } from "@prisma/client";
 
 const findById = async (id: string) => {
   const user = await prisma.user.findUnique({ where: { id } });
@@ -61,7 +61,7 @@ const revokeRefreshToken = async (userId: string) => {
 };
 
 const deleteRefreshToken = async (refreshToken: string) => {
-  const result = await prisma.refreshToken.deleteMany({
+  const result = await prisma.resetToken.deleteMany({
     where: { refreshToken },
   });
 

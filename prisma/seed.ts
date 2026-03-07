@@ -1,11 +1,8 @@
 import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "../src/generated/prisma/client.js";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 
-const connectionString = `${process.env.DEV_DATABASE_URL}`;
-const adapter = new PrismaPg({ connectionString });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
   console.log("🌱 Starting database seed...\n");
@@ -15,7 +12,7 @@ async function main() {
   await prisma.order.deleteMany();
   await prisma.product.deleteMany();
   await prisma.category.deleteMany();
-  await prisma.refreshToken.deleteMany();
+  await prisma.resetToken.deleteMany();
   await prisma.user.deleteMany();
   console.log("✓ Cleared existing data\n");
 
@@ -27,7 +24,6 @@ async function main() {
       name: "Test User",
       email: "test@example.com",
       password: hashedPassword,
-      role: "USER",
     },
   });
 
@@ -36,7 +32,6 @@ async function main() {
       name: "Admin User",
       email: "admin@example.com",
       password: hashedPassword,
-      role: "ADMIN",
     },
   });
 

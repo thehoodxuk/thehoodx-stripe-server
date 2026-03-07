@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma.js";
-import type { OrderStatus } from "../generated/prisma/enums.js";
+import type { OrderStatus } from "@prisma/client";
 
 export interface CreateOrderData {
   userId: string;

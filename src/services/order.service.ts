@@ -1,7 +1,7 @@
 import { orderRepo, type CreateOrderData } from "../repos/order.repo.js";
 import { productRepo } from "../repos/product.repo.js";
 import { AppError } from "../lib/app-error.js";
-import type { OrderStatus } from "../generated/prisma/enums.js";
+import type { OrderStatus } from "@prisma/client";
 
 export interface CartItem {
   productId: string;

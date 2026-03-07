@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import type { AuthRequest } from "../middleware/auth.js";
 import { orderService } from "../services/order.service.js";
-import type { OrderStatus } from "../generated/prisma/enums.js";
+import type { OrderStatus } from "@prisma/client";
 
 // Get user's orders
 const getMyOrders = async (req: AuthRequest, res: Response) => {
