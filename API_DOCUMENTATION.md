@@ -537,6 +537,7 @@ GET /api/categories/:idOrSlug/products
 ```
 
 **Order Status Flow:**
+
 ```
 PENDING → PROCESSING → SHIPPED → DELIVERED
     │
@@ -623,12 +624,14 @@ POST /api/checkout/webhook
 ```
 
 **Headers:**
+
 ```
 stripe-signature: <webhook_signature>
 Content-Type: application/json
 ```
 
 **Handled Events:**
+
 - `checkout.session.completed` - Updates order status to `PROCESSING`
 - `checkout.session.expired` - Updates order status to `CANCELLED`
 
@@ -651,10 +654,10 @@ Authorization: Bearer <access_token>
 
 **Query Parameters:**
 
-| Parameter | Type   | Description                                            |
-| --------- | ------ | ------------------------------------------------------ |
-| page      | number | Page number (default: 1)                               |
-| limit     | number | Items per page (default: 10)                           |
+| Parameter | Type   | Description                                                          |
+| --------- | ------ | -------------------------------------------------------------------- |
+| page      | number | Page number (default: 1)                                             |
+| limit     | number | Items per page (default: 10)                                         |
 | status    | string | Filter by status: PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED |
 
 **Response (200):**
@@ -786,6 +789,7 @@ Authorization: Bearer <access_token>
 ```
 
 **Valid Status Values:**
+
 - `PENDING` - Order created, awaiting payment
 - `PROCESSING` - Payment received, preparing order
 - `SHIPPED` - Order shipped
@@ -809,7 +813,8 @@ Authorization: Bearer <access_token>
 - `400` - Order ID is required
 - `401` - Unauthorized
 - `404` - Order not found
-```
+
+````
 
 ---
 
@@ -969,7 +974,7 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
-```
+````
 
 ### 2. Authentication Context (React)
 
@@ -1099,12 +1104,15 @@ interface ShippingInfo {
 export function useCheckout() {
   const checkout = async (items: CartItem[], shipping: ShippingInfo) => {
     try {
-      const { sessionId, orderId } = (await api.createCheckoutSession(items, shipping)) as {
+      const { sessionId, orderId } = (await api.createCheckoutSession(
+        items,
+        shipping,
+      )) as {
         sessionId: string;
         url: string;
         orderId: string;
       };
-      
+
       const stripe = await stripePromise;
 
       if (!stripe) {
@@ -1116,7 +1124,7 @@ export function useCheckout() {
       if (error) {
         throw error;
       }
-      
+
       return { orderId };
     } catch (error) {
       console.error("Checkout error:", error);
@@ -1152,10 +1160,10 @@ export default function CheckoutPage() {
   const { checkout } = useCheckout();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   // Get cart from your cart state/context
   const cartItems: CartItem[] = []; // Your cart items
-  
+
   const [shipping, setShipping] = useState({
     name: user?.name || '',
     address: '',
@@ -1169,7 +1177,7 @@ export default function CheckoutPage() {
       router.push('/login?redirect=/checkout');
       return;
     }
-    
+
     setIsLoading(true);
     try {
       // Transform cart items to checkout format
@@ -1179,7 +1187,7 @@ export default function CheckoutPage() {
         size: item.size,
         color: item.color,
       }));
-      
+
       await checkout(checkoutItems, shipping);
       // User will be redirected to Stripe Checkout
     } catch (error) {
@@ -1220,7 +1228,7 @@ export default function CheckoutPage() {
           onChange={(e) => setShipping(s => ({ ...s, country: e.target.value }))}
         />
       </form>
-      
+
       <button onClick={handleCheckout} disabled={isLoading}>
         {isLoading ? 'Processing...' : 'Proceed to Payment'}
       </button>
@@ -1260,7 +1268,7 @@ export default function CheckoutSuccessPage() {
       <p>Order ID: {order.id}</p>
       <p>Status: {order.status}</p>
       <p>Total: ${order.total.toFixed(2)}</p>
-      
+
       <h2>Items</h2>
       <ul>
         {order.items.map((item: any) => (
@@ -1269,7 +1277,7 @@ export default function CheckoutSuccessPage() {
           </li>
         ))}
       </ul>
-      
+
       <h2>Shipping To</h2>
       <p>{order.shippingName}</p>
       <p>{order.shippingAddress}</p>
@@ -1324,7 +1332,7 @@ export default function OrdersPage() {
           ))}
         </ul>
       )}
-      
+
       {/* Pagination */}
       <div>
         <button onClick={() => setPage(p => p - 1)} disabled={page === 1}>
