@@ -62,7 +62,10 @@ describe("Category Routes", () => {
 
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty("products");
-        expect(res.body).toHaveProperty("pagination");
+        expect(res.body).toHaveProperty("page");
+        expect(res.body).toHaveProperty("limit");
+        expect(res.body).toHaveProperty("total");
+        expect(res.body).toHaveProperty("totalPages");
       }
     });
 

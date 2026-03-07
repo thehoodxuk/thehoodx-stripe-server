@@ -2,6 +2,16 @@ import { describe, it, expect, beforeAll } from "vitest";
 import request from "supertest";
 import app from "../src/server.js";
 
+// Helper to extract cookie from response
+const getCookie = (res: request.Response, name: string): string | undefined => {
+  const cookies = res.headers["set-cookie"];
+  if (!cookies) return undefined;
+  const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
+  const cookie = cookieArray.find((c: string) => c.startsWith(`${name}=`));
+  if (!cookie) return undefined;
+  return cookie.split(";")[0].split("=")[1];
+};
+
 describe("Auth Routes", () => {
   const testUser = {
     name: "Test User",
@@ -10,21 +20,25 @@ describe("Auth Routes", () => {
   };
 
   let accessToken: string;
-  let refreshToken: string;
+  let refreshTokenCookie: string;
 
   describe("POST /api/auth/signup", () => {
-    it("should create a new user", async () => {
+    it("should create a new user and set refresh token cookie", async () => {
       const res = await request(app).post("/api/auth/signup").send(testUser);
 
       expect(res.status).toBe(201);
       expect(res.body).toHaveProperty("user");
       expect(res.body).toHaveProperty("accessToken");
-      expect(res.body).toHaveProperty("refreshToken");
+      expect(res.body).not.toHaveProperty("refreshToken"); // Should be in cookie, not body
       expect(res.body.user.email).toBe(testUser.email);
       expect(res.body.user).not.toHaveProperty("password");
 
+      // Check cookie is set
+      const cookie = getCookie(res, "refreshToken");
+      expect(cookie).toBeDefined();
+
       accessToken = res.body.accessToken;
-      refreshToken = res.body.refreshToken;
+      refreshTokenCookie = cookie!;
     });
 
     it("should fail with missing fields", async () => {
@@ -53,7 +67,7 @@ describe("Auth Routes", () => {
   });
 
   describe("POST /api/auth/login", () => {
-    it("should login with valid credentials", async () => {
+    it("should login with valid credentials and set refresh token cookie", async () => {
       const res = await request(app).post("/api/auth/login").send({
         email: testUser.email,
         password: testUser.password,
@@ -62,10 +76,14 @@ describe("Auth Routes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("user");
       expect(res.body).toHaveProperty("accessToken");
-      expect(res.body).toHaveProperty("refreshToken");
+      expect(res.body).not.toHaveProperty("refreshToken"); // Should be in cookie
+
+      // Check cookie is set
+      const cookie = getCookie(res, "refreshToken");
+      expect(cookie).toBeDefined();
 
       accessToken = res.body.accessToken;
-      refreshToken = res.body.refreshToken;
+      refreshTokenCookie = cookie!;
     });
 
     it("should fail with invalid email", async () => {
@@ -127,29 +145,41 @@ describe("Auth Routes", () => {
   });
 
   describe("POST /api/auth/refresh", () => {
-    it("should refresh access token", async () => {
-      const res = await request(app).post("/api/auth/refresh").send({
-        refreshToken,
+    it("should refresh access token using cookie", async () => {
+      // First login to get a fresh cookie
+      const loginRes = await request(app).post("/api/auth/login").send({
+        email: testUser.email,
+        password: testUser.password,
       });
+      const freshCookie = getCookie(loginRes, "refreshToken");
+
+      const res = await request(app)
+        .post("/api/auth/refresh")
+        .set("Cookie", `refreshToken=${freshCookie}`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("accessToken");
-      expect(res.body).toHaveProperty("refreshToken");
+      expect(res.body).toHaveProperty("user");
+      expect(res.body).not.toHaveProperty("refreshToken"); // Should be in cookie
+
+      // Check new cookie is set
+      const newCookie = getCookie(res, "refreshToken");
+      expect(newCookie).toBeDefined();
 
       accessToken = res.body.accessToken;
-      refreshToken = res.body.refreshToken;
+      refreshTokenCookie = newCookie!;
     });
 
-    it("should fail with invalid refresh token", async () => {
-      const res = await request(app).post("/api/auth/refresh").send({
-        refreshToken: "invalid_token",
-      });
+    it("should fail with invalid refresh token cookie", async () => {
+      const res = await request(app)
+        .post("/api/auth/refresh")
+        .set("Cookie", "refreshToken=invalid_token");
 
       expect(res.status).toBe(401);
     });
 
-    it("should fail with missing refresh token", async () => {
-      const res = await request(app).post("/api/auth/refresh").send({});
+    it("should fail with missing refresh token cookie", async () => {
+      const res = await request(app).post("/api/auth/refresh");
 
       expect(res.status).toBe(400);
     });
@@ -223,13 +253,24 @@ describe("Auth Routes", () => {
   });
 
   describe("POST /api/auth/logout", () => {
-    it("should logout successfully", async () => {
-      const res = await request(app).post("/api/auth/logout").send({
-        refreshToken,
+    it("should logout successfully and clear cookie", async () => {
+      // First login to get a fresh cookie
+      const loginRes = await request(app).post("/api/auth/login").send({
+        email: testUser.email,
+        password: testUser.password,
       });
+      const cookie = getCookie(loginRes, "refreshToken");
+
+      const res = await request(app)
+        .post("/api/auth/logout")
+        .set("Cookie", `refreshToken=${cookie}`);
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveProperty("message");
+
+      // Check cookie is cleared
+      const clearedCookie = res.headers["set-cookie"];
+      expect(clearedCookie).toBeDefined();
     });
   });
 });

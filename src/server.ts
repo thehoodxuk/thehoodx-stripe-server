@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import cookieParser from "cookie-parser";
 import { authRouter } from "./routes/auth.js";
 import { categoriesRouter } from "./routes/categories.js";
 import { checkoutRouter } from "./routes/checkout.js";
@@ -19,6 +20,7 @@ app.use(
     optionsSuccessStatus: 200,
   }),
 );
+app.use(cookieParser());
 app.use(express.json());
 
 // Routes
