@@ -61,7 +61,7 @@ const revokeRefreshToken = async (userId: string) => {
 };
 
 const deleteRefreshToken = async (refreshToken: string) => {
-  const result = await prisma.resetToken.deleteMany({
+  const result = await prisma.refreshToken.deleteMany({
     where: { refreshToken },
   });
 
