@@ -8,7 +8,9 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000",
+}));
 
 // The Webhook endpoint must be defined BEFORE app.use(express.json())
 // because it requires the raw body to verify the Stripe signature.
