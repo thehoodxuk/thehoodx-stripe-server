@@ -4,6 +4,7 @@ const cors = require("cors");
 const Stripe = require("stripe");
 
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const PORT = process.env.PORT || 3000;
 
 const app = express();
 
@@ -94,7 +95,6 @@ app.post("/create-checkout-session", async (req, res) => {
 });
 
 if (require.main === module) {
-  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
 
