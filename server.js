@@ -55,6 +55,11 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
   res.status(200).send();
 });
 
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // Middleware to parse JSON bodies for all routes defined AFTER this point
 app.use(express.json());
 
