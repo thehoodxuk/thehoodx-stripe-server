@@ -71,6 +71,7 @@ app.post("/create-checkout-session", async (req, res) => {
     const line_items = items.map(item => ({
       price_data: {
         currency: "cad",
+        tax_behavior: "exclusive",
         product_data: {
           name: item.name
         },
@@ -83,6 +84,7 @@ app.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
+      automatic_tax: { enabled: true },
       success_url: `${process.env.FRONTEND_URL}/success`,
       cancel_url: `${process.env.FRONTEND_URL}/cancel`
     });
