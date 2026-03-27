@@ -64,6 +64,48 @@ app.get("/health", (req, res) => {
 // Middleware to parse JSON bodies for all routes defined AFTER this point
 app.use(express.json());
 
+// 👇 NEW: Pre-calculation endpoint called by the frontend 
+app.post("/calculate-tax", async (req, res) => {
+  try {
+    const { items, shipping_address } = req.body;
+
+    // Optional: map common country names to 2-letter codes for Stripe 
+    // Defaults to "US" if Stripe errors out due to long names.
+    let countryCode = shipping_address.country.trim().toUpperCase();
+    if (countryCode === "UNITED STATES" || countryCode === "USA") countryCode = "US";
+    if (countryCode === "CANADA") countryCode = "CA";
+    if (countryCode === "UNITED KINGDOM" || countryCode === "UK") countryCode = "GB";
+
+    const line_items = items.map(item => ({
+      amount: Math.round(item.price * 100),
+      reference: item.name,
+      tax_behavior: "exclusive",
+      quantity: item.quantity || 1
+    }));
+
+    // Stripe Tax API requires the specific customer address to do the math locally
+    const calculation = await stripe.tax.calculations.create({
+      currency: "cad", // Adjust if you sell in USD
+      line_items,
+      customer_details: {
+        address: {
+          line1: shipping_address.line1,
+          city: shipping_address.city,
+          postal_code: shipping_address.postal_code,
+          country: countryCode.substring(0, 2),
+        },
+        address_source: "shipping",
+      },
+    });
+
+    res.json({ tax_amount_exclusive: calculation.tax_amount_exclusive });
+  } catch (error) {
+    console.error("Error calculating tax:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 app.post("/create-checkout-session", async (req, res) => {
   try {
     const items = req.body.items;
@@ -85,15 +127,10 @@ app.post("/create-checkout-session", async (req, res) => {
       line_items,
       mode: "payment",
       
-      // 👇 Enable automatic tax calculation
+      // Enable automatic tax calculation
       automatic_tax: { enabled: true },
       
-      // 👇 Stripe requires an address to calculate tax.
-      // EITHER require the billing address:
-      billing_address_collection: "required",
-      
-      // OR explicitly ask Stripe Checkout to collect the shipping address 
-      // (Recommended for physical products like hoodies/t-shirts):
+      // Explicitly ask Stripe Checkout to collect the shipping address 
       shipping_address_collection: {
         allowed_countries: ["US", "CA", "GB"], // Update these to the countries you want to ship and collect tax for
       },
