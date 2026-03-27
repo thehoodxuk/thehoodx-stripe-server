@@ -71,7 +71,7 @@ app.post("/create-checkout-session", async (req, res) => {
     const line_items = items.map(item => ({
       price_data: {
         currency: "cad",
-        tax_behavior: "exclusive",
+        tax_behavior: "exclusive", // Taxes will be added ON TOP of the price
         product_data: {
           name: item.name
         },
@@ -84,7 +84,20 @@ app.post("/create-checkout-session", async (req, res) => {
       payment_method_types: ["card"],
       line_items,
       mode: "payment",
+      
+      // 👇 Enable automatic tax calculation
       automatic_tax: { enabled: true },
+      
+      // 👇 Stripe requires an address to calculate tax.
+      // EITHER require the billing address:
+      billing_address_collection: "required",
+      
+      // OR explicitly ask Stripe Checkout to collect the shipping address 
+      // (Recommended for physical products like hoodies/t-shirts):
+      shipping_address_collection: {
+        allowed_countries: ["US", "CA", "GB"], // Update these to the countries you want to ship and collect tax for
+      },
+      
       success_url: `${process.env.FRONTEND_URL}/success`,
       cancel_url: `${process.env.FRONTEND_URL}/cancel`
     });
